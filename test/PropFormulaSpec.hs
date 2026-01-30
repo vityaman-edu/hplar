@@ -5,7 +5,13 @@ import PropFormula (Prop (Prop), PropFormula, tautology, valuation)
 import Test.Hspec
 
 spec :: Spec
-spec = describe "Formula Show instance" $ do
+spec = describe "PropFormula" $ do
+  specShow
+  specValuation
+  specTautology
+
+specShow :: SpecWith ()
+specShow = describe "Formula Show instance" $ do
   describe "Basic constructors" $ do
     it "shows Const False as F" $ do
       show (Const False :: PropFormula String) `shouldBe` "F"
@@ -61,7 +67,9 @@ spec = describe "Formula Show instance" $ do
       let formula = (Const True :& Atom (Prop "P")) :| (Const False :-> Atom (Prop "Q"))
       show formula `shouldBe` "T & P | (F -> Q)"
 
-  describe "valuation function" $ do
+specValuation :: SpecWith ()
+specValuation =
+  describe "valuation" $ do
     it "evaluates Const False as False" $ do
       valuation (const True) (Const False :: PropFormula String) `shouldBe` False
 
@@ -100,6 +108,8 @@ spec = describe "Formula Show instance" $ do
       valuation (== "Q") formula `shouldBe` False
       valuation (\v -> v == "P" || v == "Q") formula `shouldBe` True
 
+specTautology :: SpecWith ()
+specTautology =
   describe "tautology function" $ do
     it "identifies Const True as a tautology" $ do
       tautology (Const True :: PropFormula String) `shouldBe` True
