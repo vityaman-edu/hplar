@@ -4,10 +4,15 @@
 module PropFormula
   ( Prop (..),
     PropFormula,
+    valuation,
+    interpretations,
+    tautology,
+    unsatisfiable,
+    satisfiable,
   )
 where
 
-import Formula (Formula)
+import Formula (Formula (..), atoms)
 
 newtype Prop v = Prop v
   deriving (Eq)
@@ -25,3 +30,38 @@ instance {-# OVERLAPPABLE #-} (Show v) => Show (Prop v) where
 instance Functor Prop where
   fmap :: (a -> b) -> Prop a -> Prop b
   fmap f (Prop v) = Prop (f v)
+
+instance Foldable Prop where
+  foldr :: (a -> b -> b) -> b -> Prop a -> b
+  foldr f z (Prop v) = f v z
+
+valuation :: (a -> Bool) -> PropFormula a -> Bool
+valuation interpretation formula = case formula of
+  (Const False) -> False
+  (Const True) -> True
+  Atom (Prop v) -> interpretation v
+  Not a -> not (valuation interpretation a)
+  a :& b -> valuation interpretation a && valuation interpretation b
+  a :| b -> valuation interpretation a || valuation interpretation b
+  a :-> b -> not (valuation interpretation a) || valuation interpretation b
+  a :<-> b -> valuation interpretation a == valuation interpretation b
+
+interpretations :: (Eq a) => [a] -> [a -> Bool]
+interpretations propositions = case propositions of
+  [] -> []
+  (x : xs) ->
+    concat
+      [ [ \y -> (y == x) || i y,
+          \y -> (y /= x) && i y
+        ]
+        | i <- interpretations xs
+      ]
+
+tautology :: (Eq a) => PropFormula a -> Bool
+tautology f = and [valuation (i . Prop) f | i <- interpretations $ atoms f]
+
+unsatisfiable :: (Eq a) => PropFormula a -> Bool
+unsatisfiable f = tautology $ Not f
+
+satisfiable :: (Eq a) => PropFormula a -> Bool
+satisfiable f = not $ unsatisfiable f

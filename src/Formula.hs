@@ -2,6 +2,7 @@
 
 module Formula
   ( Formula (..),
+    atoms,
   )
 where
 
@@ -44,3 +45,23 @@ instance (Functor f) => Functor (Formula f) where
   fmap f (a :| b) = fmap f a :| fmap f b
   fmap f (a :-> b) = fmap f a :-> fmap f b
   fmap f (a :<-> b) = fmap f a :<-> fmap f b
+
+instance (Foldable f) => Foldable (Formula f) where
+  foldr :: (a -> b -> b) -> b -> Formula f a -> b
+  foldr _ z (Const _) = z
+  foldr f z (Atom a) = foldr f z a
+  foldr f z (Not a) = foldr f z a
+  foldr f z (a :& b) = foldr f (foldr f z b) a
+  foldr f z (a :| b) = foldr f (foldr f z b) a
+  foldr f z (a :-> b) = foldr f (foldr f z b) a
+  foldr f z (a :<-> b) = foldr f (foldr f z b) a
+
+atoms :: Formula a v -> [a v]
+atoms f = case f of
+  (Const _) -> []
+  (Atom a) -> [a]
+  (Not a) -> atoms a
+  (a :& b) -> atoms a ++ atoms b
+  (a :| b) -> atoms a ++ atoms b
+  (a :-> b) -> atoms a ++ atoms b
+  (a :<-> b) -> atoms a ++ atoms b
