@@ -1,8 +1,27 @@
+{-# LANGUAGE FlexibleInstances #-}
+{-# LANGUAGE InstanceSigs #-}
+
 module PropFormula
-  ( PropFormula,
+  ( Prop (..),
+    PropFormula,
   )
 where
 
 import Formula (Formula)
 
-type PropFormula v = Formula v v
+newtype Prop v = Prop v
+  deriving (Eq)
+
+type PropFormula v = Formula Prop v
+
+instance Show (Prop String) where
+  showsPrec :: Int -> Prop String -> ShowS
+  showsPrec _ (Prop v) = showString v
+
+instance {-# OVERLAPPABLE #-} (Show v) => Show (Prop v) where
+  showsPrec :: Int -> Prop v -> ShowS
+  showsPrec d (Prop v) = showsPrec d v
+
+instance Functor Prop where
+  fmap :: (a -> b) -> Prop a -> Prop b
+  fmap f (Prop v) = Prop (f v)

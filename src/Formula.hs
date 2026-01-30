@@ -15,14 +15,15 @@ infixr 5 :<->
 
 data Formula a v
   = Const Bool
-  | Atom a
+  | Atom (a v)
   | Not (Formula a v)
   | (Formula a v) :& (Formula a v)
   | (Formula a v) :| (Formula a v)
   | (Formula a v) :-> (Formula a v)
   | (Formula a v) :<-> (Formula a v)
+  deriving (Eq)
 
-instance (Show a) => Show (Formula a v) where
+instance (Show (a v)) => Show (Formula a v) where
   showsPrec :: Int -> Formula a v -> ShowS
   showsPrec d f = case f of
     Const False -> showString "F"
@@ -33,3 +34,13 @@ instance (Show a) => Show (Formula a v) where
     a :| b -> showParen (d > 5) $ showsPrec 5 a . showString " | " . showsPrec 6 b
     a :-> b -> showParen (d > 4) $ showsPrec 5 a . showString " -> " . showsPrec 4 b
     a :<-> b -> showParen (d > 3) $ showsPrec 4 a . showString " <-> " . showsPrec 4 b
+
+instance (Functor f) => Functor (Formula f) where
+  fmap :: (a -> b) -> Formula f a -> Formula f b
+  fmap _ (Const b) = Const b
+  fmap f (Atom a) = Atom (fmap f a)
+  fmap f (Not a) = Not (fmap f a)
+  fmap f (a :& b) = fmap f a :& fmap f b
+  fmap f (a :| b) = fmap f a :| fmap f b
+  fmap f (a :-> b) = fmap f a :-> fmap f b
+  fmap f (a :<-> b) = fmap f a :<-> fmap f b
