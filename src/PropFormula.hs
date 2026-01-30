@@ -49,6 +49,7 @@ valuation interpretation formula = case formula of
 interpretations :: (Eq a) => [a] -> [a -> Bool]
 interpretations propositions = case propositions of
   [] -> []
+  [x] -> [(== x), (/= x)]
   (x : xs) ->
     concat
       [ [ \y -> (y == x) || i y,

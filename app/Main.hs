@@ -1,6 +1,10 @@
 module Main (main) where
 
-import Lib
+import PropFormula (tautology, Prop (Prop), interpretations)
+import Formula (Formula(..), atoms)
 
 main :: IO ()
-main = someFunc
+main = do
+  let formula = Atom (Prop "P") :& Atom (Prop "Q")
+  print $ length $ interpretations (atoms formula)
+  print $ tautology formula

@@ -1,7 +1,7 @@
 module PropFormulaSpec (spec) where
 
 import Formula (Formula (..))
-import PropFormula (Prop (..), PropFormula)
+import PropFormula (Prop (Prop), PropFormula, tautology, valuation)
 import Test.Hspec
 
 spec :: Spec
@@ -60,3 +60,73 @@ spec = describe "Formula Show instance" $ do
     it "handles complex boolean combinations" $ do
       let formula = (Const True :& Atom (Prop "P")) :| (Const False :-> Atom (Prop "Q"))
       show formula `shouldBe` "T & P | (F -> Q)"
+
+  describe "valuation function" $ do
+    it "evaluates Const False as False" $ do
+      valuation (const True) (Const False :: PropFormula String) `shouldBe` False
+
+    it "evaluates Const True as True" $ do
+      valuation (const False) (Const True :: PropFormula String) `shouldBe` True
+
+    it "evaluates Atom using the interpretation function" $ do
+      valuation (== "P") (Atom (Prop "P") :: PropFormula String) `shouldBe` True
+      valuation (== "Q") (Atom (Prop "P") :: PropFormula String) `shouldBe` False
+
+    it "evaluates Not operator correctly" $ do
+      valuation (const True) (Not (Const True) :: PropFormula String) `shouldBe` False
+      valuation (const False) (Not (Const False) :: PropFormula String) `shouldBe` True
+
+    it "evaluates :& operator correctly" $ do
+      let formula = Atom (Prop "P") :& Atom (Prop "Q")
+      valuation (== "P") formula `shouldBe` False
+      valuation (== "Q") formula `shouldBe` False
+      valuation (\v -> v == "P" || v == "Q") formula `shouldBe` True
+
+    it "evaluates :| operator correctly" $ do
+      let formula = Atom (Prop "P") :| Atom (Prop "Q")
+      valuation (== "P") formula `shouldBe` True
+      valuation (== "Q") formula `shouldBe` True
+      valuation (== "R") formula `shouldBe` False
+
+    it "evaluates :-> operator correctly" $ do
+      let formula = Atom (Prop "P") :-> Atom (Prop "Q")
+      valuation (== "P") formula `shouldBe` False
+      valuation (== "Q") formula `shouldBe` True
+      valuation (== "R") formula `shouldBe` True
+
+    it "evaluates :<-> operator correctly" $ do
+      let formula = Atom (Prop "P") :<-> Atom (Prop "Q")
+      valuation (== "P") formula `shouldBe` False
+      valuation (== "Q") formula `shouldBe` False
+      valuation (\v -> v == "P" || v == "Q") formula `shouldBe` True
+
+  describe "tautology function" $ do
+    it "identifies Const True as a tautology" $ do
+      tautology (Const True :: PropFormula String) `shouldBe` True
+
+    it "identifies Const False as not a tautology" $ do
+      tautology (Const False :: PropFormula String) `shouldBe` True
+
+    it "identifies P | !P as a tautology" $ do
+      let formula = Atom (Prop "P") :| Not (Atom (Prop "P"))
+      tautology formula `shouldBe` True
+
+    it "identifies P & !P as not a tautology" $ do
+      let formula = Atom (Prop "P") :& Not (Atom (Prop "P"))
+      tautology formula `shouldBe` False
+
+    it "identifies P -> P as a tautology" $ do
+      let formula = Atom (Prop "P") :-> Atom (Prop "P")
+      tautology formula `shouldBe` True
+
+    it "identifies P <-> P as a tautology" $ do
+      let formula = Atom (Prop "P") :<-> Atom (Prop "P")
+      tautology formula `shouldBe` True
+
+    it "identifies complex tautologies correctly" $ do
+      let formula = (Atom (Prop "P") :-> Atom (Prop "Q")) :| (Atom (Prop "Q") :-> Atom (Prop "P"))
+      tautology formula `shouldBe` True
+
+    it "identifies non-tautologies correctly" $ do
+      let formula = Atom (Prop "P") :& Atom (Prop "Q")
+      tautology formula `shouldBe` False
