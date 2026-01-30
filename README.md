@@ -1,2 +1,3 @@
 # hplar
-Coding Practical Logic and Automated Reasoning
+
+Coding the Handbook of Practical Logic and Automated Reasoning.
