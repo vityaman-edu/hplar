@@ -4,20 +4,25 @@
 module PropFormula
   ( Prop (..),
     PropFormula,
+    p,
     valuation,
     interpretations,
     tautology,
     unsatisfiable,
     satisfiable,
+    (|=>),
   )
 where
 
-import Formula (Formula (..), atoms)
+import Formula (Formula (..), atoms, flatMap)
 
 newtype Prop v = Prop v
   deriving (Eq)
 
 type PropFormula v = Formula Prop v
+
+p :: a -> PropFormula a
+p = Atom . Prop
 
 instance Show (Prop String) where
   showsPrec :: Int -> Prop String -> ShowS
@@ -66,3 +71,8 @@ unsatisfiable f = tautology $ Not f
 
 satisfiable :: (Eq a) => PropFormula a -> Bool
 satisfiable f = not $ unsatisfiable f
+
+infix 6 |=>
+
+(|=>) :: (Eq a) => a -> PropFormula a -> PropFormula a -> PropFormula a
+(|=>) old new = flatMap (\x -> if x == Prop old then new else Atom x)

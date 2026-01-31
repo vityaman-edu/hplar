@@ -3,6 +3,7 @@
 module Formula
   ( Formula (..),
     atoms,
+    flatMap,
   )
 where
 
@@ -65,3 +66,14 @@ atoms f = case f of
   (a :| b) -> atoms a ++ atoms b
   (a :-> b) -> atoms a ++ atoms b
   (a :<-> b) -> atoms a ++ atoms b
+
+flatMap :: (a b -> Formula a c) -> Formula a b -> Formula a c
+flatMap transform formula = case formula of
+  (Const a) -> Const a
+  (Atom a) -> transform a
+  (Not a) -> Not (fmt a)
+  (a :& b) -> fmt a :& fmt b
+  (a :| b) -> fmt a :| fmt b
+  (a :-> b) -> fmt a :-> fmt b
+  (a :<-> b) -> fmt a :<-> fmt b
+  where fmt = flatMap transform
