@@ -26,6 +26,7 @@ library
   exposed-modules:
       Formula
       Lib
+      PropCNF
       PropFormula
   other-modules:
       Paths_hplar

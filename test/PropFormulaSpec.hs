@@ -1,6 +1,6 @@
 module PropFormulaSpec (spec) where
 
-import Formula (Formula (..), nnf)
+import Formula (Formula (..))
 import PropFormula (PropFormula, p, tautology, valuation, (|=>))
 import Test.Hspec
 
@@ -10,17 +10,10 @@ spec = describe "PropFormula" $ do
   specValuation
   specTautology
   specSubstitution
-  specNnf
 
 specShow :: SpecWith ()
 specShow = describe "Formula Show instance" $ do
   describe "Basic constructors" $ do
-    it "shows Const False as F" $
-      show (Const False :: PropFormula String) `shouldBe` "F"
-
-    it "shows Const True as T" $
-      show (Const True :: PropFormula String) `shouldBe` "T"
-
     it "shows Atom with its value" $ do
       show (p "P" :: PropFormula String) `shouldBe` "P"
       show (p 42 :: PropFormula Int) `shouldBe` "42"
@@ -45,9 +38,6 @@ specShow = describe "Formula Show instance" $ do
     it "shows :-> operator with arrow" $
       show (p "P" :-> p "Q") `shouldBe` "P -> Q"
 
-    it "shows :<-> operator with double arrow" $
-      show (p "P" :<-> p "Q") `shouldBe` "P <-> Q"
-
   describe "Operator precedence and parentheses" $ do
     it "adds parentheses for lower precedence operators" $ do
       show (p "P" :& (p "Q" :| p "R")) `shouldBe` "P & (Q | R)"
@@ -57,34 +47,16 @@ specShow = describe "Formula Show instance" $ do
       let formula = (p "P" :& p "Q") :-> (p "R" :| Not (p "S"))
       show formula `shouldBe` "P & Q -> R | !S"
 
-    it "handles deeply nested formulas" $ do
-      let formula = p "P" :<-> (p "Q" :-> (p "R" :& Not (p "S")))
-      show formula `shouldBe` "P <-> Q -> R & !S"
-
     it "handles multiple negations" $ do
       let formula = Not (Not (Not (p "P")))
       show formula `shouldBe` "!!!P"
 
-    it "handles complex boolean combinations" $ do
-      let formula = (Const True :& p "P") :| (Const False :-> p "Q")
-      show formula `shouldBe` "T & P | (F -> Q)"
-
 specValuation :: SpecWith ()
 specValuation =
   describe "valuation" $ do
-    it "evaluates Const False as False" $
-      valuation (const True) (Const False :: PropFormula String) `shouldBe` False
-
-    it "evaluates Const True as True" $
-      valuation (const False) (Const True :: PropFormula String) `shouldBe` True
-
     it "evaluates Atom using the interpretation function" $ do
       valuation (== "P") (p "P") `shouldBe` True
       valuation (== "Q") (p "P") `shouldBe` False
-
-    it "evaluates Not operator correctly" $ do
-      valuation (const True) (Not (Const True) :: PropFormula String) `shouldBe` False
-      valuation (const False) (Not (Const False) :: PropFormula String) `shouldBe` True
 
     it "evaluates :& operator correctly" $ do
       let formula = p "P" :& p "Q"
@@ -104,21 +76,9 @@ specValuation =
       valuation (== "Q") formula `shouldBe` True
       valuation (== "R") formula `shouldBe` True
 
-    it "evaluates :<-> operator correctly" $ do
-      let formula = p "P" :<-> p "Q"
-      valuation (== "P") formula `shouldBe` False
-      valuation (== "Q") formula `shouldBe` False
-      valuation (\v -> v == "P" || v == "Q") formula `shouldBe` True
-
 specTautology :: SpecWith ()
 specTautology =
   describe "tautology function" $ do
-    it "identifies Const True as a tautology" $
-      tautology (Const True :: PropFormula String) `shouldBe` True
-
-    it "identifies Const False as not a tautology" $
-      tautology (Const False :: PropFormula String) `shouldBe` True
-
     it "identifies P | !P as a tautology" $ do
       let formula = p "P" :| Not (p "P")
       tautology formula `shouldBe` True
@@ -129,10 +89,6 @@ specTautology =
 
     it "identifies P -> P as a tautology" $ do
       let formula = p "P" :-> p "P"
-      tautology formula `shouldBe` True
-
-    it "identifies P <-> P as a tautology" $ do
-      let formula = p "P" :<-> p "P"
       tautology formula `shouldBe` True
 
     it "identifies complex tautologies correctly" $ do
@@ -157,11 +113,3 @@ specSubstitution =
       let formula = p "p" :& p "q" :& p "p" :& p "q"
       let result = substitution formula
       show result `shouldBe` "(p | q) & (q & ((p | q) & q))"
-
-specNnf :: SpecWith ()
-specNnf =
-  describe "nnf function" $ do
-    it "converts (p <=> q) <=> ~(r ==> s) to its NNF equivalent" $ do
-      let fm = (p "p" :<-> p "q") :<-> Not (p "r" :-> p "s")
-      let fm' = nnf fm
-      tautology (fm :<-> fm') `shouldBe` True

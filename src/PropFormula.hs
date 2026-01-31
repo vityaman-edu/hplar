@@ -4,7 +4,11 @@
 module PropFormula
   ( Prop (..),
     PropFormula,
+    PropLiteral,
     p,
+    lit,
+    lit',
+    litNot,
     valuation,
     interpretations,
     tautology,
@@ -14,6 +18,7 @@ module PropFormula
   )
 where
 
+import Data.Bifunctor (second)
 import Formula (Formula (..), atoms, flatMap)
 
 newtype Prop v = Prop v
@@ -21,8 +26,19 @@ newtype Prop v = Prop v
 
 type PropFormula v = Formula Prop v
 
+type PropLiteral v = (v, Bool)
+
 p :: a -> PropFormula a
 p = Atom . Prop
+
+lit :: v -> PropLiteral v
+lit v = (v, True)
+
+lit' :: v -> PropLiteral v
+lit' = litNot . lit
+
+litNot :: PropLiteral v -> PropLiteral v
+litNot = second not
 
 instance Show (Prop String) where
   showsPrec :: Int -> Prop String -> ShowS
@@ -42,14 +58,11 @@ instance Foldable Prop where
 
 valuation :: (a -> Bool) -> PropFormula a -> Bool
 valuation interpretation formula = case formula of
-  (Const False) -> False
-  (Const True) -> True
   Atom (Prop v) -> interpretation v
   Not a -> not (valuation interpretation a)
   a :& b -> valuation interpretation a && valuation interpretation b
   a :| b -> valuation interpretation a || valuation interpretation b
   a :-> b -> not (valuation interpretation a) || valuation interpretation b
-  a :<-> b -> valuation interpretation a == valuation interpretation b
 
 interpretations :: (Eq a) => [a] -> [a -> Bool]
 interpretations propositions = case propositions of
