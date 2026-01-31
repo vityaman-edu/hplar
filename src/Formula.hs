@@ -4,6 +4,7 @@ module Formula
   ( Formula (..),
     atoms,
     flatMap,
+    nnf,
   )
 where
 
@@ -76,4 +77,57 @@ flatMap transform formula = case formula of
   (a :| b) -> fmt a :| fmt b
   (a :-> b) -> fmt a :-> fmt b
   (a :<-> b) -> fmt a :<-> fmt b
-  where fmt = flatMap transform
+  where
+    fmt = flatMap transform
+
+nnf :: Formula a v -> Formula a v
+nnf = nnf' . simplify
+  where
+    simplify' :: Formula a v -> Formula a v
+    simplify' f = case f of
+      (Not (Const False)) -> Const True
+      (Not (Const True)) -> Const False
+      (Not (Not p)) -> p
+      (_ :& Const False) -> Const False
+      (Const False :& _) -> Const False
+      (p :& Const True) -> p
+      (Const True :& q) -> q
+      (p :| Const False) -> p
+      (Const False :| q) -> q
+      (_ :| Const True) -> Const True
+      (Const True :| _) -> Const True
+      (Const False :-> _) -> Const True
+      (Const True :-> p) -> p
+      (_ :-> Const True) -> Const True
+      (p :-> Const False) -> Not p
+      (p :<-> Const True) -> p
+      (Const True :<-> q) -> q
+      (p :<-> Const False) -> Not p
+      (Const False :<-> q) -> Not q
+      x -> x
+
+    simplify :: Formula a v -> Formula a v
+    simplify f = case f of
+      (Const x) -> Const x
+      (Atom x) -> Atom x
+      Not p -> simplify' (Not $ simplify p)
+      (p :& q) -> simplify' (simplify p :& simplify q)
+      (p :| q) -> simplify' (simplify p :| simplify q)
+      (p :-> q) -> simplify' (simplify p :-> simplify q)
+      (p :<-> q) -> simplify' (simplify p :<-> simplify q)
+
+    nnf' :: Formula a v -> Formula a v
+    nnf' f = case f of
+      Const x -> Const x
+      Atom x -> Atom x
+      Not (Const x) -> Not $ Const x
+      Not (Atom x) -> Not $ Atom x
+      Not (Not x) -> nnf' x
+      Not (x :& y) -> nnf' (Not x) :| nnf' (Not y)
+      Not (x :| y) -> nnf' (Not x) :& nnf' (Not y)
+      Not (x :-> y) -> nnf' x :& nnf' (Not y)
+      Not (x :<-> y) -> (nnf' x :& nnf' (Not y)) :| (nnf' (Not x) :& nnf' y)
+      x :& y -> nnf' x :& nnf' y
+      x :| y -> nnf' x :| nnf' y
+      x :-> y -> nnf' (Not x) :| nnf' y
+      x :<-> y -> (nnf' x :& nnf' y) :| (nnf' (Not x) :& nnf' (Not y))

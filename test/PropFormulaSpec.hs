@@ -1,6 +1,6 @@
 module PropFormulaSpec (spec) where
 
-import Formula (Formula (..))
+import Formula (Formula (..), nnf)
 import PropFormula (PropFormula, p, tautology, valuation, (|=>))
 import Test.Hspec
 
@@ -10,6 +10,7 @@ spec = describe "PropFormula" $ do
   specValuation
   specTautology
   specSubstitution
+  specNnf
 
 specShow :: SpecWith ()
 specShow = describe "Formula Show instance" $ do
@@ -156,3 +157,11 @@ specSubstitution =
       let formula = p "p" :& p "q" :& p "p" :& p "q"
       let result = substitution formula
       show result `shouldBe` "(p | q) & (q & ((p | q) & q))"
+
+specNnf :: SpecWith ()
+specNnf =
+  describe "nnf function" $ do
+    it "converts (p <=> q) <=> ~(r ==> s) to its NNF equivalent" $ do
+      let fm = (p "p" :<-> p "q") :<-> Not (p "r" :-> p "s")
+      let fm' = nnf fm
+      tautology (fm :<-> fm') `shouldBe` True
