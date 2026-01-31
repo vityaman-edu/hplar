@@ -1,5 +1,8 @@
-import PropFormulaSpec (spec)
+import qualified PropCNFSpec
+import qualified PropFormulaSpec
 import Test.Hspec
 
 main :: IO ()
-main = hspec spec
+main = hspec $ do
+  PropFormulaSpec.spec
+  PropCNFSpec.spec
