@@ -80,11 +80,18 @@ flatMap transform formula = case formula of
   where
     fmt = flatMap transform
 
-nnf :: Formula a v -> Formula a v
-nnf = nnf' . simplify
+simplify :: Formula a v -> Formula a v
+simplify f = case f of
+  (Const x) -> Const x
+  (Atom x) -> Atom x
+  Not p -> simplify' (Not $ simplify p)
+  (p :& q) -> simplify' (simplify p :& simplify q)
+  (p :| q) -> simplify' (simplify p :| simplify q)
+  (p :-> q) -> simplify' (simplify p :-> simplify q)
+  (p :<-> q) -> simplify' (simplify p :<-> simplify q)
   where
     simplify' :: Formula a v -> Formula a v
-    simplify' f = case f of
+    simplify' f' = case f' of
       (Not (Const False)) -> Const True
       (Not (Const True)) -> Const False
       (Not (Not p)) -> p
@@ -106,16 +113,9 @@ nnf = nnf' . simplify
       (Const False :<-> q) -> Not q
       x -> x
 
-    simplify :: Formula a v -> Formula a v
-    simplify f = case f of
-      (Const x) -> Const x
-      (Atom x) -> Atom x
-      Not p -> simplify' (Not $ simplify p)
-      (p :& q) -> simplify' (simplify p :& simplify q)
-      (p :| q) -> simplify' (simplify p :| simplify q)
-      (p :-> q) -> simplify' (simplify p :-> simplify q)
-      (p :<-> q) -> simplify' (simplify p :<-> simplify q)
-
+nnf :: Formula a v -> Formula a v
+nnf = nnf' . simplify
+  where
     nnf' :: Formula a v -> Formula a v
     nnf' f = case f of
       Const x -> Const x
